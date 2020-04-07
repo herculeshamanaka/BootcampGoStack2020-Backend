@@ -1,7 +1,7 @@
 // importing packages
 const express = require('express'); // all content
 
-const { uuid } = require('uuidv4'); // specific function
+const { uuid, isUuid } = require('uuidv4'); // specific function
 
 // creating the app
 const app = express();
@@ -11,6 +11,37 @@ app.use(express.json());
 
 // no DB
 const projectsDS = [];
+
+// Middlewares
+function logRequests(request, response, next) {
+  const { method, url } = request;
+
+  const logLabel = `[${method.toUpperCase()}] ${url}`;
+
+  console.time(logLabel);
+
+  // without the next the request is interrupted, the route
+  // is not reach or executed
+  next();
+
+  console.timeEnd(logLabel);
+}
+
+function validateProjectId(request, response, next) {
+  const { id } = request.params;
+
+  if (!isUuid(id)) {
+    return response.status(400).json({error: 'Invalid project ID.'});
+  }
+
+  return next();
+}
+
+// for all routes
+app.use(logRequests);
+
+// for specific routes
+app.use('/projects/:id', validateProjectId);
 
 // route control
 app.get('/projects', (request, response) => {
